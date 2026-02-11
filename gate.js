@@ -64,7 +64,8 @@
 
       // 简单签名校验（弱安全，但足够）
       const raw = parts[0] + "." + SECRET;
-      const expected = btoa(raw).replace(/=+$/, "");
+      const expected = btoa(raw).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+
       if (sig !== expected) return "invalid";
 
       return payload;
