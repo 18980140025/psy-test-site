@@ -65,6 +65,15 @@
         <h3 class="h3">一句建议</h3>
         <p id="resultTips" class="p"></p>
 
+        <!-- ✅ 雷达图区域（新增） -->
+        <section class="card" style="margin-top:12px;">
+          <h3 class="h3">你的维度雷达图</h3>
+          <div class="muted" style="margin:6px 0 10px;">满分 100 分（按维度平均分换算）</div>
+          <div style="height:300px;">
+            <canvas id="radarChart"></canvas>
+          </div>
+        </section>
+
         <div class="shareBox">
           <textarea id="shareText" readonly></textarea>
           <div class="row">
@@ -77,7 +86,10 @@
   </div>
 
   <script src="gate.js"></script>
-<script src="app.js"></script>
 
+  <!-- ✅ Chart.js（新增，必须放在 app.js 前面） -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script src="app.js"></script>
 </body>
 </html>
