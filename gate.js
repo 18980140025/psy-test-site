@@ -1,14 +1,9 @@
-// gate.js —— 单设备 + 24小时访问控制（前端版）
-// 适合：低价内容 / 心理测试 / 非强安全场景
+// gate.js —— 单设备 + 24小时访问控制（前端版，base64url 统一版）
 
 (function () {
-  // ================== 可配置区域（你只需要看这里） ==================
-  const BRAND_NAME = "你这样的人"; // 拦截页面显示的品牌名
-  const SECRET = "lylyjlylyjlylyjlylyjlylyjlylyjlylyjlylyj"; 
-  // ↑↑↑ 很重要：改成你自己的任意一串字符（30位以上，字母数字都行）
-  // ====================================================================
+  const BRAND_NAME = "你这样的人";
+  const SECRET = "lylyjlylyjlylyjlylyjlylyjlylyjlylyjlylyj";
 
-  /* ---------- 工具函数 ---------- */
   function qs(name) {
     return new URLSearchParams(window.location.search).get(name);
   }
@@ -50,31 +45,45 @@
     return id;
   }
 
-  /* ---------- token 校验 ---------- */
+  // ✅ base64url -> base64（给 atob 用）
+  function b64urlToB64(s) {
+    s = s.replace(/-/g, "+").replace(/_/g, "/");
+    // 补齐 padding
+    const pad = s.length % 4;
+    if (pad) s += "=".repeat(4 - pad);
+    return s;
+  }
+
+  // ✅ base64 -> base64url（去掉=，替换+/）
+  function b64ToB64url(s) {
+    return s.replace(/=+$/,"").replace(/\+/g, "-").replace(/\//g, "_");
+  }
+
   function parseToken(token) {
     try {
       const parts = token.split(".");
       if (parts.length !== 2) return null;
 
-      const payload = JSON.parse(atob(parts[0]));
+      const payloadB64url = parts[0];
       const sig = parts[1];
 
-      // 校验过期时间
+      // ✅ 用 base64url 解 payload
+      const payloadJson = atob(b64urlToB64(payloadB64url));
+      const payload = JSON.parse(payloadJson);
+
       if (!payload.exp || Date.now() > payload.exp) return "expired";
 
-      // 简单签名校验（弱安全，但足够）
-      const raw = parts[0] + "." + SECRET;
-      const expected = btoa(raw).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
-
+      // ✅ 签名校验：sig === base64url( btoa( payloadB64url + "." + SECRET ) )
+      const raw = payloadB64url + "." + SECRET;
+      const expected = b64ToB64url(btoa(raw));
       if (sig !== expected) return "invalid";
 
       return payload;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
 
-  /* ---------- 主逻辑 ---------- */
   const token = qs("t");
   if (!token) {
     block("无法访问", "请通过购买后获得的专属链接进入。");
@@ -96,18 +105,12 @@
   const record = localStorage.getItem(bindKey);
 
   if (!record) {
-    // 第一次访问：绑定设备
     localStorage.setItem(bindKey, deviceId);
     return;
   }
 
   if (record !== deviceId) {
-    block(
-      "设备不匹配",
-      "该链接已绑定到另一台设备，24 小时内仅支持首次打开的设备访问。"
-    );
+    block("设备不匹配", "该链接已绑定到另一台设备，24 小时内仅支持首次打开的设备访问。");
     return;
   }
-
-  // 同设备，放行
 })();
